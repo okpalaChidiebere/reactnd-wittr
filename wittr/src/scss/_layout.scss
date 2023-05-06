@@ -1,0 +1,29 @@
+.layout {
+  @include display-flex;
+  @include flex-direction(column);
+  height: 100%;
+}
+
+.main {
+  @include flex(1);
+  @include display-flex;
+  overflow: hidden;
+  position: relative;
+}
+
+html,
+body {
+  height: 100%;
+  @include display-flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+#root {
+  flex: 1;
+}
+
+.scroller {
+  overflow-y: scroll;
+  width: 100%;
+}

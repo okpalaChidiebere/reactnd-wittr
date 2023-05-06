@@ -1,0 +1,16 @@
+{
+  "name": "Wittr",
+  "short_name": "Wittr",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    }
+  ],
+  "display": "standalone",
+  "start_url": ".",
+  "theme_color": "#303F9F",
+  "background_color": "#ffffff"
+}
