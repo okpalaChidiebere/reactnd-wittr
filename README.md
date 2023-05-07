@@ -22,6 +22,15 @@ We learned about:
 
 - Is basically trying the network first and if that fails, then we can serve some cached data or so. This works great for good connectivity and offline apps
 
+## Service Worker Dev Tools
+
+- In Chrome dev tools, you can find the `Service Workers` under the **Application tab** > **Application section in the side panel on the left** It has the gearbox icon on it
+- With the nature of service workers, you can check the **update on reload** checkbox if you want the service worker to be more developer friendly instead of user friendly if you want to see all recent css, or js changes on your site right away. If not it will be added to the waiting sw queue and not load the new updates until
+  - navigate to a page or website not controlled by that service worker and navigate back to the pervious page controlled by the service worker
+  - or you close that tab and open a new tab
+- Once your service worker is registered, you app becomes offline first!. You can confirm this by navigating to the Network Tab and open the Throttling dropdown which is set to No Throttling by default. Then select **offline** you will see that the page loads! 😁 I don't not matter what network you choose slow fast or custom that page loads.
+- See this [doc](https://www.browserstack.com/guide/how-to-perform-network-throttling-in-chrome) to learn how to add custom network speeds in chrome dev tools
+
 ## Getting Started React
 
 - [Initialize react app](https://create-react-app.dev/docs/getting-started)
