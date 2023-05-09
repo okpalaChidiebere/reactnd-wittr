@@ -1,28 +1,37 @@
 import { toastRef } from "./components/Toast";
 
 const updateReady = (swr) => {
-  toastRef.current?.show("New version available", {
-    buttons: ["Whatever"],
-  });
+  toastRef.current?.show(
+    "New version available",
+    {
+      buttons: ["refresh", "dismiss"],
+    },
+    (answer, hide) => {
+      if (answer === "refresh") {
+        swr.postMessage({ action: "SKIP_WAITING" });
+        return;
+      }
+      // the dismiss button is pressed
+      hide();
+    }
+  );
 };
 
 const trackInstalling = (swr) => {
   //listen to the state changes to track it
-  swr.onstatechange = () => {
-    if (swr.state == "installed") {
+  swr.onstatechange = (e) => {
+    if (e.target.state === "installed") {
       // if it reaches the install state we tell the user
       updateReady(swr);
     }
   };
 };
 
-let serviceWorker;
-
 export default async function register() {
   try {
     if (!navigator.serviceWorker) return; //if service worker is not supported, we just return. to avoid seeing error in console
 
-    const registration = await navigator.serviceWorker.register("/sw.js", {
+    await navigator.serviceWorker.register("/sw.js", {
       // the file "sw.js" MUST load from the link `${process.env.PUBLIC_URL}/sw.js` in browser
       //'scope' is where you define what pages you want sw to keep track control.
       //we want the whole website we we use root which is default. You can specify just certain pages and not the whole website if you want
@@ -36,11 +45,11 @@ export default async function register() {
       return;
     }
 
+    const registration = await navigator.serviceWorker.ready;
     if (registration.installing) {
       // there is an update in progress but that update may fail so we track it
       trackInstalling(registration.installing);
     } else if (registration.waiting) {
-      serviceWorker = registration.waiting;
       // there is an update ready and waiting so we let the user know about it
       updateReady(registration.waiting);
     } else {
@@ -53,6 +62,13 @@ export default async function register() {
   } catch (e) {
     console.error(`Registration failed with ${e}`);
   }
+
+  // listen for controlling service worker changing
+  navigator.serviceWorker.addEventListener("controllerchange", (event) => {
+    // add this point, a new controller has taken over because of the self.skipWaiting() being invoked
+
+    window.location.reload(); //we reload the page!
+  });
 }
 
 export function unregister() {

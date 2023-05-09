@@ -31,13 +31,29 @@ We learned about:
 - Once your service worker is registered, you app becomes offline first!. You can confirm this by navigating to the Network Tab and open the Throttling dropdown which is set to No Throttling by default. Then select **offline** you will see that the page loads! 😁 I don't not matter what network you choose slow fast or custom that page loads.
 - See this [doc](https://www.browserstack.com/guide/how-to-perform-network-throttling-in-chrome) to learn how to add custom network speeds in chrome dev tools
 
+## Updating the sw.js file
+
+- Anytime you update the sw.js file like adding a new response to cache or build your app make sure to change the cacheVersion `STATIC_CACHE_NAME`. In our code we already handled deleting the old cache or keeping list of cache we wants
+
+## DownSide to using Service Worker during development on React
+
+- When you update your scss, there is a `hot-update` reload that reloads your whole app for you to see this change, It basically bypass the cache and loads all new js files again. **hot-update** GET request only happens when you update css files and not regular js files inside the `/src` folder
+- If you want to see the new changes made to the **/src** folder, you will have to manually refresh the page yourself and bypass the cache like `shift` `command` `r`. The service worker caching is so good that even checking the **update on reload** checkbox in service worker dev tools does not work. That only will reload the new sw.js file updates and NOT your updates in the **/src** folders. This might be good or bad depending on ur needs. personally i don't have any problem with this
+- **Another important note:** If you make a change to the sw.js file and any js file(s) in the src folder, first save all the files in the /src folder, go and hot reload the browser then finally save the sw.js file. This step is important if you dont want to fall into **service worker registration loop**
+- Sometimes in development you might run into call **service worker registration loop** 😭😱; just unregister the sw active and all pending sw, then delete all caches and hot refresh the page and you should be good
+
 ## Caching Response
 
 - With the help of [**workbox-sw**](https://developer.chrome.com/docs/workbox/modules/workbox-sw/) we can do this very easily
 - FYI: The reason is did not go ahead and use the global js cache function like [here](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers#install_and_activate_populating_your_cache) to manually cache response is because you must be specific with the urls otherwise the cache will not work. But with workbox i can use regex and write some logic to cache certain type of fetch responses
-- It is important to note that you cannot cache websocket responses. Only fetch requests is what you can cache. Our witter app pretty much get posts updates from ws so if we want to show those pose offline we will have to cache those posts in indexDB
 - Other caching strategies are listed and explained [here](https://developer.chrome.com/docs/workbox/caching-resources-during-runtime/#caching-strategies) and [here](https://developer.chrome.com/docs/workbox/reference/workbox-strategies/). We used **CacheFirst** strategy for this app
 - You can use [additional modules](https://developer.chrome.com/docs/workbox/modules/) from the Workbox project, add in a push notification library, or remove some of the default caching logic.
+
+## Caching the Page Skeleton
+
+- Since react is a single page application, we can easy cache the page skeleton. React loads all the page at one when we make a request to load the js scripts, css and index.html `/` or `/index.html`
+- It is important to note that you cannot cache websocket responses. Only fetch requests is what you can cache. Our witter app pretty much get posts updates from ws so if we want to show those pose offline we will have to cache those posts in indexedDB. This way when the user is offline, we load the app skeleton and the get the posts from the indexedDB
+
 - [Stackoverflow - Workbox update cache on new version](https://stackoverflow.com/questions/60912127/workbox-update-cache-on-new-version)
 - [Detect when a user is offline in js](https://stackoverflow.com/questions/68408612/offline-pages-with-service-worker-react)
 
