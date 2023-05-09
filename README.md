@@ -31,6 +31,16 @@ We learned about:
 - Once your service worker is registered, you app becomes offline first!. You can confirm this by navigating to the Network Tab and open the Throttling dropdown which is set to No Throttling by default. Then select **offline** you will see that the page loads! 😁 I don't not matter what network you choose slow fast or custom that page loads.
 - See this [doc](https://www.browserstack.com/guide/how-to-perform-network-throttling-in-chrome) to learn how to add custom network speeds in chrome dev tools
 
+## Caching Response
+
+- With the help of [**workbox-sw**](https://developer.chrome.com/docs/workbox/modules/workbox-sw/) we can do this very easily
+- FYI: The reason is did not go ahead and use the global js cache function like [here](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers#install_and_activate_populating_your_cache) to manually cache response is because you must be specific with the urls otherwise the cache will not work. But with workbox i can use regex and write some logic to cache certain type of fetch responses
+- It is important to note that you cannot cache websocket responses. Only fetch requests is what you can cache. Our witter app pretty much get posts updates from ws so if we want to show those pose offline we will have to cache those posts in indexDB
+- Other caching strategies are listed and explained [here](https://developer.chrome.com/docs/workbox/caching-resources-during-runtime/#caching-strategies) and [here](https://developer.chrome.com/docs/workbox/reference/workbox-strategies/). We used **CacheFirst** strategy for this app
+- You can use [additional modules](https://developer.chrome.com/docs/workbox/modules/) from the Workbox project, add in a push notification library, or remove some of the default caching logic.
+- [Stackoverflow - Workbox update cache on new version](https://stackoverflow.com/questions/60912127/workbox-update-cache-on-new-version)
+- [Detect when a user is offline in js](https://stackoverflow.com/questions/68408612/offline-pages-with-service-worker-react)
+
 ## Getting Started React
 
 - [Initialize react app](https://create-react-app.dev/docs/getting-started)

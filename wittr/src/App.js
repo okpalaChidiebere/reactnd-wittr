@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { formatDistance, getTime } from "date-fns";
 import { enCA } from "date-fns/locale";
 import Posts from "./components/Posts";
-import Toast from "./components/Toast";
+import Toast, { toastRef } from "./components/Toast";
 
 const backendBaseUrl = "http://127.0.0.1";
 const maxMessages = 30;
@@ -14,7 +14,6 @@ function App() {
   const lastTimeUpdate = useRef(0);
   socketUrl.current.protocol = "ws";
   socketUrl.current.port = 3001;
-  const toastRef = useRef(null);
   const lostConnectionToast = useRef(false); //keep track of if the  lostConnection Toast is currently displayed or not
 
   const [state, setState] = useState({
@@ -51,7 +50,7 @@ function App() {
     ws.current.onopen = () => {
       //Hide lostConnection Toast
       if (toastRef.current) {
-        toastRef.current.hide();
+        toastRef.current?.hide();
         lostConnectionToast.current = false;
       }
     };
@@ -76,16 +75,6 @@ function App() {
       //tell the user
       if (!lostConnectionToast.current) {
         toastRef.current?.show("Unable to connect. Retrying…");
-        // toastRef.current?.show(
-        //   "Do you wish to continue?",
-        //   {
-        //     buttons: ["Yes", "No"],
-        //   },
-        //   (buttonClicked, hide) => {
-        //     console.log(buttonClicked);
-        //     hide();
-        //   }
-        // );
         lostConnectionToast.current = true;
       }
 

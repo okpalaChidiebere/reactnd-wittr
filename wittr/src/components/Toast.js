@@ -5,22 +5,45 @@ import {
   useImperativeHandle,
   useRef,
   useState,
+  createRef,
 } from "react";
 
 const defaultButtons = ["dismiss"];
 let hideTimer;
+
+export function createToastContainerRef() {
+  return createRef({
+    isReady: () => undefined,
+    show: (message, opts, buttonsResolver = (h) => () => {}) => undefined,
+    hide: () => undefined,
+  });
+}
+
+export const toastRef = createToastContainerRef();
+
+export function handleShow(message, opts, buttonsResolver) {
+  if (toastRef.current.isReady()) {
+    toastRef.current.show(message, opts, buttonsResolver);
+  }
+}
+
+export function handleHide() {
+  if (toastRef.current.isReady()) {
+    toastRef.current.hide();
+  }
+}
 
 const Toast = forwardRef((props, forwardedRef) => {
   const toastRef = useRef(null);
   const [state, setState] = useState({
     buttons: ["dismiss"],
     message: null,
-    unmountToast: false,
+    unmountToast: true,
     duration: 0, //in seconds
     show: false,
   });
 
-  const { buttons, unmountToast, duration, message, show } = state;
+  const { buttons, unmountToast, duration, message, show, isReady } = state;
 
   const hide = useCallback(() => {
     clearTimeout(hideTimer);
@@ -32,6 +55,9 @@ const Toast = forwardRef((props, forwardedRef) => {
   useImperativeHandle(
     forwardedRef,
     () => ({
+      isReady() {
+        return unmountToast === false;
+      },
       // show a message to the user eg:
       // toasts.show("Do you wish to continue?", {
       //   buttons: ['yes', 'no']
@@ -66,7 +92,7 @@ const Toast = forwardRef((props, forwardedRef) => {
         hide();
       },
     }),
-    [hide]
+    [hide, unmountToast]
   );
 
   useEffect(() => {
