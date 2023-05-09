@@ -2,7 +2,8 @@ importScripts(
   "https://storage.googleapis.com/workbox-cdn/releases/6.4.1/workbox-sw.js"
 );
 
-const { cacheableResponse, expiration, strategies, routing } = workbox;
+const { cacheableResponse, expiration, strategies, routing, core } = workbox;
+const STATIC_CACHE_NAME = "wittr-static-v2"; //we changed the version to avoid redundant cache
 
 routing.registerRoute(
   ({ url }) => {
@@ -51,7 +52,7 @@ routing.registerRoute(
     return false;
   },
   new strategies.CacheFirst({
-    cacheName: "wittr-static-v1",
+    cacheName: STATIC_CACHE_NAME,
     plugins: [
       new cacheableResponse.CacheableResponsePlugin({
         statuses: [0, 200, 206], // 206 Partial Code.
@@ -63,3 +64,23 @@ routing.registerRoute(
     ],
   })
 );
+
+const deleteOldCaches = async () => {
+  const cacheKeepList = [STATIC_CACHE_NAME]; //in reality we might have other versions of cache that we want the user to keep. so we add them to this list
+  const cacheNames = await caches.keys();
+  const cachesToDelete = cacheNames.filter(
+    (cacheName) =>
+      //we check to see the cacheName starts with 'wittr' because we don't want to delete other caches of apps sharing thesame origin. Not for this case of wittr app though
+      //if the cacheName is not in the list to keep, we delete it
+      cacheName.startsWith("wittr-") && !cacheKeepList.includes(cacheName)
+  );
+  await Promise.all(
+    cachesToDelete.map(async (cacheName) => {
+      return await caches.delete(cacheName);
+    })
+  );
+};
+
+self.addEventListener("activate", function (event) {
+  event.waitUntil(deleteOldCaches());
+});
