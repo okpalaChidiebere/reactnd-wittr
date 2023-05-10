@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 const Post = (props) => {
   const { body, photo, name, avatar, time, timeTextContext } = props;
   return (
@@ -43,4 +45,10 @@ const Post = (props) => {
   );
 };
 
-export default Post;
+export default memo(Post, (prevProps, nextProps) => {
+  /* return true if passing nextProps to render would return the same result as passing prevProps to render, otherwise return false */
+  return (
+    prevProps.id === nextProps.id &&
+    prevProps.timeTextContext === nextProps.timeTextContext
+  );
+});

@@ -43,7 +43,7 @@ const Toast = forwardRef((props, forwardedRef) => {
     show: false,
   });
 
-  const { buttons, unmountToast, duration, message, show, isReady } = state;
+  const { buttons, unmountToast, duration, message, show } = state;
 
   const hide = useCallback(() => {
     clearTimeout(hideTimer);

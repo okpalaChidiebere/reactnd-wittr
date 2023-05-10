@@ -1,4 +1,11 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Post from "./Post";
 
 const Posts = (props) => {
@@ -70,4 +77,6 @@ const Posts = (props) => {
   );
 };
 
-export default Posts;
+export default memo(Posts, (prevProps, nextProps) => {
+  return JSON.stringify(prevProps.posts) === JSON.stringify(nextProps.posts);
+});

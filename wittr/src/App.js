@@ -4,21 +4,19 @@ import { formatDistance, getTime } from "date-fns";
 import { enCA } from "date-fns/locale";
 import Posts from "./components/Posts";
 import Toast, { toastRef } from "./components/Toast";
+import { bulkInsertWittrs, getWittrs, MAX_MESSAGES } from "./AppDatabase";
 
 const backendBaseUrl = "http://127.0.0.1";
-const maxMessages = 30;
 
 function App() {
   const ws = useRef(null);
-  const socketUrl = useRef(new URL("/updates", backendBaseUrl));
   const lastTimeUpdate = useRef(0);
-  socketUrl.current.protocol = "ws";
-  socketUrl.current.port = 3001;
   const lostConnectionToast = useRef(false); //keep track of if the  lostConnection Toast is currently displayed or not
 
   const [state, setState] = useState({
     posts: [],
     latestPostDate: null,
+    isInitialized: false,
   });
 
   const timesUpdate = useCallback(() => {
@@ -38,13 +36,33 @@ function App() {
     lastTimeUpdate.current = Date.now();
   }, []);
 
+  const addPosts = useCallback(
+    (posts) => {
+      setState((currState) => {
+        const updatedPosts = posts.concat(currState.posts); //add to new posts as most recent
+        return {
+          ...(posts.length && {
+            latestPostDate: getTime(new Date(posts[0].time)),
+          }),
+          posts: updatedPosts.slice(0, MAX_MESSAGES), // remove really old posts to avoid too much content and leave the rest
+        };
+      });
+      timesUpdate();
+    },
+    [timesUpdate]
+  );
+
   const openSocket = useCallback(() => {
+    const socketUrl = new URL("/updates", backendBaseUrl);
+    socketUrl.protocol = "ws";
+    socketUrl.port = 3001;
+
     // get the date of the latest post, or null if there are no posts
     if (state.latestPostDate) {
-      socketUrl.current.search = "since=" + state.latestPostDate.valueOf();
+      socketUrl.search = "since=" + state.latestPostDate.valueOf();
     }
 
-    const client = new WebSocket(socketUrl.current.href);
+    const client = new WebSocket(socketUrl.href);
     ws.current = client;
 
     ws.current.onopen = () => {
@@ -56,18 +74,10 @@ function App() {
     };
 
     ws.current.onmessage = (e) => {
-      requestAnimationFrame(() => {
+      requestAnimationFrame(async () => {
         const messages = JSON.parse(e.data);
-        setState((currState) => {
-          // remove really old posts to avoid too much content
-          const posts = currState.posts.slice(0, maxMessages);
-
-          return {
-            latestPostDate: getTime(new Date(messages[0].time)),
-            posts: [...new Set([...messages, ...posts])],
-          };
-        });
-        timesUpdate();
+        addPosts(messages);
+        bulkInsertWittrs(messages);
       });
     };
 
@@ -83,29 +93,43 @@ function App() {
         openSocket();
       }, 5000);
     };
-  }, [state.latestPostDate, timesUpdate]);
+  }, [state.latestPostDate, addPosts]);
 
   const softTimesUpdate = useCallback(() => {
     if (Date.now() - lastTimeUpdate.current < 1000 * 10) return;
     timesUpdate();
   }, [timesUpdate]);
 
+  const { posts, isInitialized } = state;
+
   useEffect(() => {
+    let id;
     (async () => {
-      if (!ws.current) {
-        openSocket();
+      if (!isInitialized) {
+        // first load data from the IDB before opening the websocket
+        const postsFromIndexedDB = await getWittrs();
+        addPosts(postsFromIndexedDB);
+
+        //React.StrictMode re-renders the app component twice so we have to check to avoid opening multiple connections during development
+        if (!ws.current) {
+          openSocket();
+        }
+
+        // update times on an interval
+        id = setInterval(() => {
+          requestAnimationFrame(() => {
+            softTimesUpdate();
+          });
+        }, 1000 * 30);
+
+        setState((currState) => ({ ...currState, isInitialized: true }));
       }
-
-      // update times on an interval
-      setInterval(function () {
-        requestAnimationFrame(() => {
-          softTimesUpdate();
-        });
-      }, 1000 * 30);
     })();
-  }, [openSocket, softTimesUpdate]);
-
-  const { posts } = state;
+    return () => {
+      clearInterval(id);
+      lastTimeUpdate.current = 0;
+    };
+  }, [softTimesUpdate, addPosts, openSocket, isInitialized]);
 
   return (
     <div className="layout">
