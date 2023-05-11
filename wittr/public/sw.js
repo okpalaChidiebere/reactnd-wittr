@@ -7,7 +7,9 @@ const { cacheableResponse, expiration, strategies, routing, core, precaching } =
 const STATIC_CACHE_NAME = "wittr-static-v2"; // we use this cache to store static files of our app
 const WITTR_CONTENT_IMAGES = "wittr-content-imgs"; // we store images of wittr in  different cache because we want the images to live in between versions of our wittr app. Remember that static files versions can change
 
-precaching.cleanupOutdatedCaches();
+core.clientsClaim();
+
+// precaching.cleanupOutdatedCaches();
 
 const servePhotoPlugin = {
   cacheKeyWillBeUsed: ({ request, mode }) => {
@@ -27,31 +29,65 @@ const servePhotoPlugin = {
   },
 };
 
-// we listen for image request and store the response in the cache
-routing.registerRoute(
-  ({ url }) => {
-    if (
-      //eg: localhost:3001/photos/...
-      ["localhost"].some((urls) => url.hostname.includes(urls)) &&
-      url.pathname.startsWith("/photos/")
-    ) {
-      return true;
+const serverAvatarPlugin = {
+  cacheKeyWillBeUsed: ({ request }) => {
+    // Avatar urls look like:
+    // avatars/sam-2x.jpg
+    // But storageUrl has the -2x.jpg bit missing.
+    // Use this url to store & match the image in the cache.
+    // This means you only store one copy of each avatar.
+    const storageUrl = request.url.replace(/-\dx\.jpg$/, "");
+
+    return storageUrl;
+  },
+};
+
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+  const requestUrl = new URL(request.url);
+
+  //caching backend APIs
+  if (["http://localhost:3001"].includes(requestUrl.origin)) {
+    // we listen for image request and store the response in the cache
+
+    // serve photo
+    if (requestUrl.pathname.startsWith("/photos/")) {
+      event.respondWith(
+        new strategies.CacheFirst({
+          cacheName: WITTR_CONTENT_IMAGES,
+          plugins: [
+            servePhotoPlugin, //renames the image key
+            new expiration.ExpirationPlugin({ maxEntries: 50 }),
+            new cacheableResponse.CacheableResponsePlugin({
+              statuses: [0, 200, 301],
+            }),
+          ],
+        }).handle({ event, request })
+      );
+      return;
     }
 
-    return false;
-  }, // Customize this strategy as needed, e.g., by changing to CacheFirst.
-  new strategies.CacheFirst({
-    cacheName: WITTR_CONTENT_IMAGES,
-    plugins: [
-      servePhotoPlugin, //renames the image key
-      new expiration.ExpirationPlugin({ maxEntries: 50 }),
-      new cacheableResponse.CacheableResponsePlugin({
-        statuses: [0, 200, 301],
-      }),
-      new expiration.ExpirationPlugin({ maxEntries: 50 }),
-    ],
-  })
-);
+    // serve avatars
+    if (requestUrl.pathname.startsWith("/avatars/")) {
+      event.respondWith(
+        //return images from the "wittr-content-imgs" cache
+        // if they're in there. But afterwards, go to the network
+        // to update the entry in the cache.
+        new strategies.StaleWhileRevalidate({
+          cacheName: WITTR_CONTENT_IMAGES,
+          plugins: [
+            serverAvatarPlugin,
+            new expiration.ExpirationPlugin({ maxEntries: 50 }),
+            new cacheableResponse.CacheableResponsePlugin({
+              statuses: [0, 200],
+            }),
+          ],
+        }).handle({ event, request })
+      );
+      return;
+    }
+  }
+});
 
 routing.registerRoute(
   ({ url }) => {
@@ -60,12 +96,12 @@ routing.registerRoute(
       [
         "https://fonts.gstatic.com/s/roboto/v15/2UX7WLTfW3W8TclTUvlFyQ.woff",
         "https://fonts.gstatic.com/s/roboto/v15/d-6IYplOFocCacKzxwXSOD8E0i7KZn-EPnyo3HZu7kw.woff",
-      ].some((fonts) => url.href.includes(fonts))
+      ].includes(url.href)
     ) {
       return true;
     }
 
-    //cache response from same-origins
+    //cache response from same-origins; front-end files files
     if (url.origin === self.location.origin) {
       //during development, there will be a `hot-update` fetch response, so we can cache that here as well :)
       if (url.pathname === "/") {

@@ -16,6 +16,10 @@ const imgSizeToFlickrSuffix = {
   "320px": "n",
 };
 
+const staticOptions = {
+  maxAge: 0,
+};
+
 const app = express();
 
 const appServer = http.createServer(app);
@@ -44,6 +48,8 @@ let messages = [];
   });
 
   webSocketServer.on("connection", onWsConnection);
+
+  app.use("/avatars", express.static("./public/avatars", staticOptions));
 
   app.get("/photos/:farm-:server-:id-:secret-:type.jpg", (req, res) => {
     const flickrUrl = `http://farm${req.params.farm}.staticflickr.com/${

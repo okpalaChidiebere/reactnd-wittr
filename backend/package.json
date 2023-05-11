@@ -13,7 +13,6 @@
   "dependencies": {
     "express": "^4.17.1",
     "markov": "0.0.7",
-    "uuid": "^9.0.0",
     "ws": "^8.2.2"
   }
 }

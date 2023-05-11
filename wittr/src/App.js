@@ -110,6 +110,7 @@ function App() {
       if (post.photo) {
         imagesNeeded.push(post.photo); //we add the image as those that we want to keep
       }
+      imagesNeeded.push(post.avatar); //we also include the avatar URLs in the image that we want to keep. We don't want them getting lost in the clean up!
     }
 
     const cachedImage = await caches.open("wittr-content-imgs"); //open our images cached
