@@ -6,6 +6,7 @@ const Post = (props) => {
     <article className="card post">
       {photo && (
         <div className="post-main-img-container">
+          {/** we let the browser decide what image to load based on the width */}
           <img
             className="post-main-img"
             alt=""

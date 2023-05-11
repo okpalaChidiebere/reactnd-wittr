@@ -100,12 +100,41 @@ function App() {
     timesUpdate();
   }, [timesUpdate]);
 
+  const cleanImageCache = useCallback(async () => {
+    let imagesNeeded = [];
+    const posts = await getWittrs();
+
+    for (const post of posts) {
+      //we look to see if an images contains the photo property. This property contains the photo url without the width bit at the end
+      //remember before this point, we have the messages in the storage object to be maximum of 30 at a time
+      if (post.photo) {
+        imagesNeeded.push(post.photo); //we add the image as those that we want to keep
+      }
+    }
+
+    const cachedImage = await caches.open("wittr-content-imgs"); //open our images cached
+    const cachedImagesURLs = await cachedImage.keys();
+
+    const deleteImageRequests = Array.from(cachedImagesURLs)
+      .filter((request) => {
+        //return path URL that isn't in our array of images needed
+        return !imagesNeeded.includes(request.url);
+      })
+      .map((request) => {
+        return cachedImage.delete(request); //we pass the request to cache.delete
+      });
+
+    // // make sure they all delete
+    await Promise.all(deleteImageRequests);
+  }, []);
+
   const { posts, isInitialized } = state;
 
   useEffect(() => {
-    let id;
+    let id, cleanCacheId;
     (async () => {
-      if (!isInitialized) {
+      if (isInitialized === false) {
+        await cleanImageCache();
         // first load data from the IDB before opening the websocket
         const postsFromIndexedDB = await getWittrs();
         addPosts(postsFromIndexedDB);
@@ -122,14 +151,19 @@ function App() {
           });
         }, 1000 * 30);
 
+        // The cache can still get out of control if the user keeps the page open for ages without refreshing
+        // So we call the cleanImageCache every 5 mins
+        cleanCacheId = setInterval(() => cleanImageCache(), 1000 * 60 * 5);
+
         setState((currState) => ({ ...currState, isInitialized: true }));
       }
     })();
     return () => {
       clearInterval(id);
+      clearInterval(cleanCacheId);
       lastTimeUpdate.current = 0;
     };
-  }, [softTimesUpdate, addPosts, openSocket, isInitialized]);
+  }, [softTimesUpdate, addPosts, openSocket, cleanImageCache, isInitialized]);
 
   return (
     <div className="layout">

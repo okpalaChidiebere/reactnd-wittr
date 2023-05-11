@@ -99,3 +99,8 @@ A great [article](https://maxrozen.com/react-hooks-eslint-plugin-saved-hours-deb
 ## Maintain Scrolling positions in Angular
 
 - [Maintaining Scroll Offsets When Adding Content Above The User's Viewport In Angular](https://www.bennadel.com/blog/3724-maintaining-scroll-offsets-when-adding-content-above-the-users-viewport-in-angular-9-0-0-rc-2.htm)
+
+## Caching Images
+
+- We choose to use the Cache API instead of IDB because the Cache will stream the data which is more memory efficient and leads to faster renders for the image data.
+- If we wanted to store the image in IDB we will loose the streaming effect of image bytes. we will have to read the pixel data of the image and convert the pixels to blob and all that is more complicated and to show the image will have to convert the how thing we stored in the IDB into `ImageData` and the display to the user. All these might cause the image to not be performant because the UI will have to wait for the whole image to be complete instead of streaming like the Cache API does
