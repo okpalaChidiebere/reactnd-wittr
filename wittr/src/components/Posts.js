@@ -49,13 +49,33 @@ const Posts = (props) => {
       let oldLatestPostNewPosition =
         mOldLatestPost.current.getBoundingClientRect();
 
-      scroller.current.scrollTop =
-        scroller.current.scrollTop +
-        (Math.round(oldLatestPostNewPosition.top) -
-          Math.round(oldLatestPostOldPosition.top));
+      const areScrollOffsetsTheSame =
+        Math.round(oldLatestPostNewPosition.top) ===
+        Math.round(oldLatestPostOldPosition.top);
 
-      // show the new alert if the user is not at the top of the list but the scrollTop changed
-      if (scroller.current.scrollTop !== 0) setState({ hasNewPosts: true });
+      // In modern browsers, the scroll-offset will be HANDLED AUTOMATICALLY.
+      // Meaning, the browser will UPDATE THE SCROLL OFFSET in order to maintain
+      // the "current" experience for the user (how great is that?!?!).
+      // if the pre/post scroll offsets are the different, we
+      // have to step-in and manually SCROLL THE USER DOWN to compensate for the change
+      // in container height.
+      if (!areScrollOffsetsTheSame) {
+        // the browser did not help us at this point se we handle that ourself
+
+        scroller.current.scrollTop =
+          scroller.current.scrollTop +
+          (Math.round(oldLatestPostNewPosition.top) -
+            Math.round(oldLatestPostOldPosition.top));
+
+        console.log(scroller.current.scrollTop);
+
+        // show the new alert if the user is not at the top of the list but the scrollTop changed but we haven't alerted the user before
+        setState((currState) => ({
+          ...currState,
+          ...(!currState.hasNewPosts &&
+            scroller.current.scrollTop > 0 && { hasNewPosts: true }),
+        }));
+      }
     }
   }, [posts, oldLatestPostOldPosition?.top]);
 
