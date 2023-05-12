@@ -49,7 +49,12 @@ let messages = [];
 
   webSocketServer.on("connection", onWsConnection);
 
-  app.use("/avatars", express.static("./public/avatars", staticOptions));
+  app.get("/avatars/:user_avatar-:screen_density.jpg", (req, res) => {
+    res.sendFile(
+      `avatars/${req.params.user_avatar}-${req.params.screen_density}.jpg`,
+      { root: __dirname + "/public/" }
+    );
+  });
 
   app.get("/photos/:farm-:server-:id-:secret-:type.jpg", (req, res) => {
     const flickrUrl = `http://farm${req.params.farm}.staticflickr.com/${

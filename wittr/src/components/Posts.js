@@ -67,8 +67,6 @@ const Posts = (props) => {
           (Math.round(oldLatestPostNewPosition.top) -
             Math.round(oldLatestPostOldPosition.top));
 
-        console.log(scroller.current.scrollTop);
-
         // show the new alert if the user is not at the top of the list but the scrollTop changed but we haven't alerted the user before
         setState((currState) => ({
           ...currState,

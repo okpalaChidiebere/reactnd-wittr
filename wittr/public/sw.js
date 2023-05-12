@@ -2,14 +2,41 @@ importScripts(
   "https://storage.googleapis.com/workbox-cdn/releases/6.4.1/workbox-sw.js"
 );
 
-const { cacheableResponse, expiration, strategies, routing, core, precaching } =
-  workbox;
+const {
+  cacheableResponse: { CacheableResponsePlugin },
+  expiration: { ExpirationPlugin },
+  strategies: { CacheFirst, StaleWhileRevalidate, Strategy },
+} = workbox;
+
 const STATIC_CACHE_NAME = "wittr-static-v2"; // we use this cache to store static files of our app
+
 const WITTR_CONTENT_IMAGES = "wittr-content-imgs"; // we store images of wittr in  different cache because we want the images to live in between versions of our wittr app. Remember that static files versions can change
 
-core.clientsClaim();
+const DECLARATIVE_STATIC_FILES = [
+  "https://fonts.gstatic.com/s/roboto/v15/2UX7WLTfW3W8TclTUvlFyQ.woff",
+  "https://fonts.gstatic.com/s/roboto/v15/d-6IYplOFocCacKzxwXSOD8E0i7KZn-EPnyo3HZu7kw.woff",
+  "/",
+  "/manifest.json",
+  "/imgs/icon.png",
+];
 
-// precaching.cleanupOutdatedCaches();
+//precaching static files
+self.addEventListener("install", (event) => {
+  const installPromise = new Promise((resolve, reject) => {
+    fetch(new Request("/asset-manifest.json"))
+      .then((response) => response.json())
+      .then((data) => {
+        const manifest = Object.values(data.files).concat(
+          DECLARATIVE_STATIC_FILES
+        );
+        caches.open(STATIC_CACHE_NAME).then((cache) => {
+          cache.addAll(manifest).then(resolve);
+        });
+      })
+      .catch(reject);
+  });
+  event.waitUntil(installPromise);
+});
 
 const servePhotoPlugin = {
   cacheKeyWillBeUsed: ({ request, mode }) => {
@@ -46,6 +73,20 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const requestUrl = new URL(request.url);
 
+  //we want cache first for the page skeleton (index)
+  if (requestUrl.host === self.location.origin && url.pathname === "/") {
+    event.respondWith(
+      new CacheFirst({
+        cacheName: STATIC_CACHE_NAME,
+        plugins: [
+          new CacheableResponsePlugin({
+            statuses: [0, 200, 206],
+          }),
+        ],
+      }).handle({ event, request })
+    );
+  }
+
   //caching backend APIs
   if (["http://localhost:3001"].includes(requestUrl.origin)) {
     // we listen for image request and store the response in the cache
@@ -53,12 +94,12 @@ self.addEventListener("fetch", (event) => {
     // serve photo
     if (requestUrl.pathname.startsWith("/photos/")) {
       event.respondWith(
-        new strategies.CacheFirst({
+        new CacheFirst({
           cacheName: WITTR_CONTENT_IMAGES,
           plugins: [
             servePhotoPlugin, //renames the image key
-            new expiration.ExpirationPlugin({ maxEntries: 50 }),
-            new cacheableResponse.CacheableResponsePlugin({
+            new ExpirationPlugin({ maxEntries: 50 }),
+            new CacheableResponsePlugin({
               statuses: [0, 200, 301],
             }),
           ],
@@ -73,12 +114,12 @@ self.addEventListener("fetch", (event) => {
         //return images from the "wittr-content-imgs" cache
         // if they're in there. But afterwards, go to the network
         // to update the entry in the cache.
-        new strategies.StaleWhileRevalidate({
+        new StaleWhileRevalidate({
           cacheName: WITTR_CONTENT_IMAGES,
           plugins: [
             serverAvatarPlugin,
-            new expiration.ExpirationPlugin({ maxEntries: 50 }),
-            new cacheableResponse.CacheableResponsePlugin({
+            new ExpirationPlugin({ maxEntries: 50 }),
+            new CacheableResponsePlugin({
               statuses: [0, 200],
             }),
           ],
@@ -87,67 +128,14 @@ self.addEventListener("fetch", (event) => {
       return;
     }
   }
+
+  event.respondWith(
+    // if the request matches request in our cache we return the cache otherwise we fetch it from the network
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request);
+    })
+  );
 });
-
-routing.registerRoute(
-  ({ url }) => {
-    //cache response from cross-origins
-    if (
-      [
-        "https://fonts.gstatic.com/s/roboto/v15/2UX7WLTfW3W8TclTUvlFyQ.woff",
-        "https://fonts.gstatic.com/s/roboto/v15/d-6IYplOFocCacKzxwXSOD8E0i7KZn-EPnyo3HZu7kw.woff",
-      ].includes(url.href)
-    ) {
-      return true;
-    }
-
-    //cache response from same-origins; front-end files files
-    if (url.origin === self.location.origin) {
-      //during development, there will be a `hot-update` fetch response, so we can cache that here as well :)
-      if (url.pathname === "/") {
-        return true;
-      }
-
-      if (url.pathname.endsWith("manifest.json")) {
-        return true;
-      }
-
-      if (
-        //start cache react prod build files as specified here
-        //https://create-react-app.dev/docs/production-build
-        url.pathname.match(
-          new RegExp("^/static/js/[0-9]+.[a-z0-9]+.chunk.js+$")
-        ) ||
-        url.pathname.match(new RegExp("^/static/js/main.[a-z0-9]+.js+$")) ||
-        url.pathname.match(new RegExp("^/static/css/main.[a-z0-9]+.css+$")) ||
-        //end cache react build app files
-        //cache js bundle response for react dev bundle
-        url.pathname.match(new RegExp("^/static/js/bundle.js+$"))
-      ) {
-        return true;
-      }
-
-      if (url.pathname === "/imgs/icon.png") {
-        return true;
-      }
-    }
-
-    // Return false to signal that we want to use the handler to cache non permitted "fetch" response
-    return false;
-  },
-  new strategies.CacheFirst({
-    cacheName: STATIC_CACHE_NAME,
-    plugins: [
-      new cacheableResponse.CacheableResponsePlugin({
-        statuses: [0, 200, 206], // 206 Partial Code.
-      }),
-      new expiration.ExpirationPlugin({
-        maxEntries: 50,
-        maxAgeSeconds: 20 * 60 * 60, //maximum you are allowed to cache by sw is 24hrs
-      }),
-    ],
-  })
-);
 
 const deleteOldCaches = async () => {
   const cacheKeepList = [STATIC_CACHE_NAME, WITTR_CONTENT_IMAGES]; //in reality we might have other versions of cache that we want the user to keep. so we add them to this list
