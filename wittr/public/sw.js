@@ -8,11 +8,11 @@ const {
   strategies: { CacheFirst, StaleWhileRevalidate, Strategy },
 } = workbox;
 
-const STATIC_CACHE_NAME = "wittr-static-v2"; // we use this cache to store static files of our app
+let staticCacheName = "wittr-static-v2"; // we use this cache to store static files of our app
 
 const WITTR_CONTENT_IMAGES = "wittr-content-imgs"; // we store images of wittr in  different cache because we want the images to live in between versions of our wittr app. Remember that static files versions can change
 
-const DECLARATIVE_STATIC_FILES = [
+const FILES_TO_CACHE = [
   "https://fonts.gstatic.com/s/roboto/v15/2UX7WLTfW3W8TclTUvlFyQ.woff",
   "https://fonts.gstatic.com/s/roboto/v15/d-6IYplOFocCacKzxwXSOD8E0i7KZn-EPnyo3HZu7kw.woff",
   "/",
@@ -26,15 +26,18 @@ self.addEventListener("install", (event) => {
     fetch(new Request("/asset-manifest.json"))
       .then((response) => response.json())
       .then((data) => {
-        const manifest = Object.values(data.files).concat(
-          DECLARATIVE_STATIC_FILES
-        );
-        caches.open(STATIC_CACHE_NAME).then((cache) => {
+        const manifest = Object.values(data.files).concat(FILES_TO_CACHE);
+        // console.log("Cached files:", manifest);
+        caches.open(staticCacheName).then((cache) => {
           cache.addAll(manifest).then(resolve);
         });
       })
       .catch(reject);
   });
+
+  //we pass a promise to the  event.waitUntil
+  //if and when the promise resolves, the browser know the install completed
+  // if the promise fails, the browser knows the install failed and this service worker should be discarded
   event.waitUntil(installPromise);
 });
 
@@ -77,7 +80,7 @@ self.addEventListener("fetch", (event) => {
   if (requestUrl.host === self.location.origin && url.pathname === "/") {
     event.respondWith(
       new CacheFirst({
-        cacheName: STATIC_CACHE_NAME,
+        cacheName: staticCacheName,
         plugins: [
           new CacheableResponsePlugin({
             statuses: [0, 200, 206],
@@ -98,7 +101,7 @@ self.addEventListener("fetch", (event) => {
           cacheName: WITTR_CONTENT_IMAGES,
           plugins: [
             servePhotoPlugin, //renames the image key
-            new ExpirationPlugin({ maxEntries: 50 }),
+            new ExpirationPlugin({ maxEntries: 30, purgeOnQuotaError: true }),
             new CacheableResponsePlugin({
               statuses: [0, 200, 301],
             }),
@@ -118,7 +121,11 @@ self.addEventListener("fetch", (event) => {
           cacheName: WITTR_CONTENT_IMAGES,
           plugins: [
             serverAvatarPlugin,
-            new ExpirationPlugin({ maxEntries: 50 }),
+            new ExpirationPlugin({
+              maxEntries: 30,
+              maxAgeSeconds: 1 * 24 * 60 * 60, // Cache for a maximum of 1 day
+              purgeOnQuotaError: true,
+            }),
             new CacheableResponsePlugin({
               statuses: [0, 200],
             }),
@@ -138,7 +145,7 @@ self.addEventListener("fetch", (event) => {
 });
 
 const deleteOldCaches = async () => {
-  const cacheKeepList = [STATIC_CACHE_NAME, WITTR_CONTENT_IMAGES]; //in reality we might have other versions of cache that we want the user to keep. so we add them to this list
+  const cacheKeepList = [staticCacheName, WITTR_CONTENT_IMAGES]; //in reality we might have other versions of cache that we want the user to keep. so we add them to this list
   const cacheNames = await caches.keys();
   const cachesToDelete = cacheNames.filter(
     (cacheName) =>

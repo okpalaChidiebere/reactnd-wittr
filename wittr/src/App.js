@@ -121,11 +121,11 @@ function App() {
         //return path URL that isn't in our array of images needed
         return !imagesNeeded.includes(request.url);
       })
-      .map((request) => {
+      .map(async (request) => {
         return cachedImage.delete(request); //we pass the request to cache.delete
       });
 
-    // // make sure they all delete
+    // make sure they all delete
     await Promise.all(deleteImageRequests);
   }, []);
 

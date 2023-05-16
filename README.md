@@ -1,12 +1,14 @@
 # Wittr
 
 This is a silly little demo app for learning how to build an offline-first web app.
-This is just a clone of this [app](https://github.com/jakearchibald/wittr)
+This is just a clone of this [app](https://github.com/jakearchibald/wittr). The author also wrote an article [here](https://jakearchibald.com/2014/offline-cookbook/) thats wort a good read
 
 We learned about:
 
-- Using Service Workers to intercept network traffic. We will understand this using the ServiceWorker dev tools.
+- Using [Service Workers](https://developer.chrome.com/docs/workbox/service-worker-overview/#you_need_https) to intercept network traffic. We will understand this using the ServiceWorker dev tools.
 - Using the IndexedDB API (the browser database), along with Service Workers, to write caching solutions that will make your applications more performant.
+
+The outcome was I was able to use SW both during development and production. The default [CRA](https://github.com/facebook/create-react-app#creating-an-app) with service worker only works for production :( but with my way it works for both :)
 
 ## Difference between an Offline-first and Online first app
 
@@ -28,19 +30,15 @@ We learned about:
 - With the nature of service workers, you can check the **update on reload** checkbox if you want the service worker to be more developer friendly instead of user friendly if you want to see all recent css, or js changes on your site right away. If not it will be added to the waiting sw queue and not load the new updates until
   - navigate to a page or website not controlled by that service worker and navigate back to the pervious page controlled by the service worker
   - or you close that tab and open a new tab
-- Once your service worker is registered, you app becomes offline first!. You can confirm this by navigating to the Network Tab and open the Throttling dropdown which is set to No Throttling by default. Then select **offline** you will see that the page loads! 😁 I don't not matter what network you choose slow fast or custom that page loads.
+- Once your service worker is registered, you app becomes offline first!. You can confirm this by navigating to the Network Tab and open the Throttling dropdown which is set to No Throttling by default. Then select **offline** you will see that the page loads! 😁 It doesn't not matter what network you choose slow fast or custom that page loads.
 - See this [doc](https://www.browserstack.com/guide/how-to-perform-network-throttling-in-chrome) to learn how to add custom network speeds in chrome dev tools
 
-## Updating the sw.js file
+## Simulating Network types
 
-- Anytime you update the sw.js file like adding a new response to cache or build your app make sure to change the cacheVersion `STATIC_CACHE_NAME`. In our code we already handled deleting the old cache or keeping list of cache we wants
-
-## DownSide to using Service Worker during development on React
-
-- When you update your scss or the updated js file code in the src folder generates without `[es-lint]` warning or errors, there is a `hot-update` GET request that is made which the sw caches and reloads your app to see the new changes; it basically bypass the cache and loads all new js files again. **hot-update** GET request only happens when you update css files and not regular js files inside the `/src` folder
-- If you want to see the new changes made to the **/src** folder **make sure your js file compile without warnings or errors or else you will not get those js changes right away**. You will have to shift-refresh the page yourself and bypass the cache; like `shift` `command` `r` especially if its **an [eslint warning] error in the terminal**. The service worker caching is so good that even checking the **update on reload** checkbox in service worker dev tools does not work. That only will reload the new sw.js file updates and NOT your updates in the **/src** folders. This might be good or bad depending on ur needs. personally i don't have any problem with this
-- **Another important note:** If you make a change to the sw.js file and any js file(s) in the src folder, first save all the files in the /src folder, go and shift-refresh the page then finally save the sw.js file. This step is important if you don't want to fall into **service worker registration loop**
-- Sometimes in development you might run into call **service worker registration loop** 😭😱; just unregister the sw active and all pending sw, then delete all caches and hot refresh the page and you should be good
+- To simulate offline, you can either that at the network tab in the dev tools where you select `offline` or you can close your front-end dev server and/or back-end dev sever
+- To simulate lie-fie, you can select `slow 3G` in the network tab
+- To simulate online, is basically starting all servers and selecting `no throttling` in the network tab
+- You can add your custom network. See this [article](https://www.browserstack.com/guide/how-to-perform-network-throttling-in-chrome)
 
 ## Caching Response
 
@@ -48,6 +46,18 @@ We learned about:
 - FYI: The reason is did not go ahead and use the global js cache function like [here](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers#install_and_activate_populating_your_cache) to manually cache response is because you must be specific with the urls otherwise the cache will not work. But with workbox i can use regex and write some logic to cache certain type of fetch responses
 - Other caching strategies are listed and explained [here](https://developer.chrome.com/docs/workbox/caching-resources-during-runtime/#caching-strategies) and [here](https://developer.chrome.com/docs/workbox/reference/workbox-strategies/). We used **CacheFirst** strategy for this app
 - You can use [additional modules](https://developer.chrome.com/docs/workbox/modules/) from the Workbox project, add in a push notification library, or remove some of the default caching logic.
+
+## Workbox
+
+Workbox is basically a web api on browsers that covers lower level logic like in this [article](https://jakearchibald.com/2014/offline-cookbook) you need to write for service workers
+
+- [Custom plugins in Workbox](https://developer.chrome.com/docs/workbox/using-plugins/#methods-for-custom-plugins)
+- [How to Register a Navigation Route for single page application](https://developer.chrome.com/docs/workbox/modules/workbox-routing/#how-to-register-a-navigation-route)
+- [Custom Strategies in Workbox](https://developer.chrome.com/docs/workbox/modules/workbox-strategies/#creating-a-new-strategy)
+- You can use [additional modules](https://developer.chrome.com/docs/workbox/modules/)
+- [Workbox Documentation](https://developer.chrome.com/docs/workbox/#advanced_usage)
+- [Caching with service worker and Workbox](https://sevic.dev/caching-service-worker-workbox/)
+- [https://gist.github.com/jeffposnick/fc761c06856fa10dbf93e62ce7c4bd57](https://gist.github.com/jeffposnick/fc761c06856fa10dbf93e62ce7c4bd57)
 
 ## Caching the Page Skeleton
 
@@ -91,6 +101,8 @@ A great [article](https://maxrozen.com/react-hooks-eslint-plugin-saved-hours-deb
 - [w3schools transitions](https://www.w3schools.com/css/css3_2dtransforms.asp)
 - [Using requestAnimationFrame](https://medium.com/dhiwise/reactjs-requestanimationframe-da2155706c36)
 - [How to build faster animation transitions in React](https://blog.logrocket.com/how-build-faster-animation-transitions-react/)
+- [Setup PWA Workbox Webpack Plugin for React Application | Workbox Window | Precaching | Caching at runtime.](https://imranhsayed.medium.com/setup-pwa-workbox-webpack-plugin-for-react-application-workbox-window-precaching-caching-at-40f9289650e5)
+- [https://github.com/GoogleChrome/workbox/issues/2217](https://github.com/GoogleChrome/workbox/issues/2217)
 
 ## Date-fns useful links
 
@@ -104,3 +116,50 @@ A great [article](https://maxrozen.com/react-hooks-eslint-plugin-saved-hours-deb
 
 - We choose to use the Cache API instead of IDB because the Cache will stream the data which is more memory efficient and leads to faster renders for the image data.
 - If we wanted to store the image in IDB we will loose the streaming effect of image bytes. we will have to read the pixel data of the image and convert the pixels to blob and all that is more complicated and to show the image will have to convert the how thing we stored in the IDB into `ImageData` and the display to the user. All these might cause the image to not be performant because the UI will have to wait for the whole image to be complete instead of streaming like the Cache API does
+
+## Install and Cache with service workers in React
+
+- This is also know as precaching. When user loads your app for the first time in the browser, there will be some files you want to be cached right away so that on the second hot-reload of the browser of when the user gets offline without hot-reload these files will have already been cached. These are usually files responsible for the basic skeleton of your app. maybe images, css, js, index.html, etc
+- New Service workers does not get controlled over pages until the install phase is completed. So we use this opportunity to get everything we want from the network and create a cache for them.
+- If you look `install` eventListener (listens for the install phase of the service worker) at the `sw.js` file, you will see that i made a fetch request to get the manifest file from the server eg: [http://localhost:3000/asset-manifest.json](http://localhost:3000/asset-manifest.json). The file `asset-manifest.json` describes the resources to cache and includes **hashes** of every file's contents. When an update to the application is deployed (like starting or re-starting the dev server or building the app for prod), the contents (hash) of the manifest change, informing the service worker that a new version of the application should be downloaded and cached. You will need to create a new cache used to store the new changes and delete the old cache if necessary. Angular has similar thing as well
+
+```json
+//exists in the build folder for built apps or http://localhost:3000/asset-manifest.json for running development server app
+{
+  "files": {
+    "main.js": "/static/js/bundle.js",
+    "static/js/node_modules_web-vitals_dist_web-vitals_js.chunk.js": "/static/js/node_modules_web-vitals_dist_web-vitals_js.chunk.js",
+    "index.html": "/index.html",
+    "bundle.js.map": "/static/js/bundle.js.map",
+    "main.hot-update.js.map": "/main.42d8d98ea4aaa7ff225d.hot-update.js.map",
+    "node_modules_web-vitals_dist_web-vitals_js.chunk.js.map": "/static/js/node_modules_web-vitals_dist_web-vitals_js.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/js/bundle.js",
+    "main.42d8d98ea4aaa7ff225d.hot-update.js"
+  ]
+}
+```
+
+The hash values changes with each webpack re-build and with preaching in SW, you need to add the [exact file(s) urls](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers#install_and_activate_populating_your_cache). There is no way for us to predetermine the has value LOL. Thats why we fetch that file and read those values. So this means that:
+
+- **for development** we can basically pre-cache those files during the install phase and also listen for fetch request like `hot-updates` GET requests and update the cache accordingly; this way your changes to the js file will be seen in the UI right away. Also
+- **for production** that we can easily precache the newly build files if the hash changes. The only one thing you MUST do is to update the cache name (like updating the version number or hash value in the cache name) use used to store the precache urls so the there will be a new cache with the new precache static files and then the user can get those changes.
+- This stackOverflow [thread](https://stackoverflow.com/questions/46830493/is-there-any-way-to-cache-all-files-of-defined-folder-path-in-service-worker) kinda show a bit of what i did
+
+## Updating the sw.js file
+
+Regardless, any slight change you make to the `sw.js` file will trigger a new service worker to queued in in the browser because the browser checks to see if there is a byte change between the old file and the new file. This does not update the cache, indexedDB, cookies, etc for you after you add the new service worker ( with `self.skipWaiting()` or directly from the dev tools ); you will have to handle those cases for yourself in `sw.js` file.
+
+## More to explore for a more optimized PWA
+
+- All Service worker API like backgroundFetch, Push Notifications, etc [here](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerRegistration)
+- [Richer offline experiences with the Periodic Background Sync API](https://developer.chrome.com/articles/periodic-background-sync/)
+- [Web Periodic Background Synchronization API](https://felixgerschau.com/periodic-background-sync-explained/)
+- [workbox-background-sync](https://developer.chrome.com/docs/workbox/modules/workbox-background-sync/)
+- [Web Push notifications](https://jakearchibald.com/2014/offline-cookbook)
+- [Notifications API](https://developer.mozilla.org/en-US/docs/Web/API/Notification) and [https://phppot.com/javascript/web-push-notification/](https://phppot.com/javascript/web-push-notification/)
+
+## More on web browser database
+
+- The web browser has a database called indexedDB. There are lots of API out there that builds on top of this indexedDB for easy use. Check this [article](https://levelup.gitconnected.com/using-the-indexeddb-api-with-react-and-hooks-4e63d83a5d1b)
