@@ -5,7 +5,7 @@ importScripts(
 const {
   cacheableResponse: { CacheableResponsePlugin },
   expiration: { ExpirationPlugin },
-  strategies: { CacheFirst, StaleWhileRevalidate, Strategy },
+  strategies: { CacheFirst, StaleWhileRevalidate },
 } = workbox;
 
 let staticCacheName = "wittr-static-v2"; // we use this cache to store static files of our app
