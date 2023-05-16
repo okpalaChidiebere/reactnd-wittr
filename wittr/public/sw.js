@@ -20,25 +20,20 @@ const FILES_TO_CACHE = [
   "/imgs/icon.png",
 ];
 
+const addResourcesToCache = async (resources) => {
+  const res = await fetch(new Request("/asset-manifest.json"));
+  const { files } = await res.json();
+  const manifest = Object.values(files).concat(resources);
+  const cache = await caches.open(staticCacheName);
+  await cache.addAll(manifest);
+};
+
 //precaching static files
 self.addEventListener("install", (event) => {
-  const installPromise = new Promise((resolve, reject) => {
-    fetch(new Request("/asset-manifest.json"))
-      .then((response) => response.json())
-      .then((data) => {
-        const manifest = Object.values(data.files).concat(FILES_TO_CACHE);
-        // console.log("Cached files:", manifest);
-        caches.open(staticCacheName).then((cache) => {
-          cache.addAll(manifest).then(resolve);
-        });
-      })
-      .catch(reject);
-  });
-
   //we pass a promise to the  event.waitUntil
   //if and when the promise resolves, the browser know the install completed
   // if the promise fails, the browser knows the install failed and this service worker should be discarded
-  event.waitUntil(installPromise);
+  event.waitUntil(addResourcesToCache(FILES_TO_CACHE));
 });
 
 const servePhotoPlugin = {
