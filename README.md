@@ -156,9 +156,16 @@ Regardless, any slight change you make to the `sw.js` file will trigger a new se
 - All Service worker API like backgroundFetch, Push Notifications, etc [here](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerRegistration)
 - [Richer offline experiences with the Periodic Background Sync API](https://developer.chrome.com/articles/periodic-background-sync/)
 - [Web Periodic Background Synchronization API](https://felixgerschau.com/periodic-background-sync-explained/)
+- [Background Fetch JS](https://developer.chrome.com/blog/background-fetch/)
 - [workbox-background-sync](https://developer.chrome.com/docs/workbox/modules/workbox-background-sync/)
 - [Web Push notifications](https://jakearchibald.com/2014/offline-cookbook)
 - [Notifications API](https://developer.mozilla.org/en-US/docs/Web/API/Notification) and [https://phppot.com/javascript/web-push-notification/](https://phppot.com/javascript/web-push-notification/)
+- [Do you need to show prompt for re-fresh](https://developer.chrome.com/docs/workbox/handling-service-worker-updates/#do-you-need-to-show-a-prompt)
+- [idb](https://www.npmjs.com/package/idb)
+- [emoji images](https://joypixels.com/emoji)
+- [React navigation 6](https://reactrouter.com/en/main/routers/create-browser-router)
+- [Responsive images](https://developer.mozilla.org/en-US/docs/Learn/HTML/Multimedia_and_embedding/Responsive_images)
+- [Responsive pages](https://webdesign.tutsplus.com/how-to-build-a-full-screen-responsive-page-with-flexbox--cms-32086t)
 
 ## More on web browser database
 
